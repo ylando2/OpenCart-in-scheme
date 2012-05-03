@@ -42,7 +42,7 @@ OpenCart does lazy class loading and it run one program for every request, but i
 Last we need a way to deploy this program.
 I suggest using Kawa scheme (a scheme that run on java) and jetty.
  
-I want to start working on this opensource project myself. Do you have any suggestions? If you do, contact me my email is: ylando2@gmail.com
+I want to start working on this open source project myself. Do you have any suggestions? If you do, contact me my email is: ylando2@gmail.com
 
 License
 -------
