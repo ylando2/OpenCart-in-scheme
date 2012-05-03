@@ -13,18 +13,18 @@ Here is how we implement the hearth of the application:
 ```scheme
 ;;I know that it emulate a tail call but Kawa does not support tail calls.
 (define (run-action action state)
-  (let loop ([result (action state)])
+  (let loop ((result (action state)))
     (when result
       (loop (result state)))))
 
 (define (run-pre-actions lst state)
-  (let loop ([lst lst])
+  (let loop ((lst lst))
     (if (null? lst)
         #f
         (or ((car lst) state) (loop (cdr lst))))))
 
 (define (run action pre-actions state)
-  (let ([result (run-pre-actions pre-actions state)])
+  (let ((result (run-pre-actions pre-actions state)))
     (run-action (or result action) state)))
 ```
 For example if we want to test the insertion of a data:
