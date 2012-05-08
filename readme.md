@@ -37,8 +37,6 @@ Every controller module will have a function
 ```
 The result will be put in a hash table with the controller name as a key.
 
-OpenCart does lazy class loading and it run one program for every request, but it is not the Scheme way so we should use one program with a thread pool instead.
-
 I will try to use chicken scheme and cgi. If I will have deployment problem I will move to Kawa scheme and jetty.
 
 I want to start working on this open source project myself. Do you have any suggestions? If you do, contact me my email is: ylando2@gmail.com
