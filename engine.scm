@@ -1,5 +1,5 @@
-(module engine (encript-password make-salt h)
-  (import scheme chicken)
+(module engine (encript-password make-salt h string-replace)
+  (import scheme chicken data-structures)
   (use message-digest sha2 md5 irregex)
 
 (define (sha2-encript str)
@@ -28,15 +28,30 @@
 
 ;;html-escaping
 (define (h str)
-  (irregex-replace/all 
-    '(: (or "&" "\"" "<" ">")) 
-    str 
-    (lambda (x) 
-      (let ((str2 (irregex-match-substring x 0)))
-        (cond 
-          [(string=? str2 "&") "&amp;"]
-          [(string=? str2 "\"") "&quot;"]
-          [(string=? str2 "<") "&lt;"]
-          [(string=? str2 ">") "&gt;"])))))
+  (string-translate*
+    str
+    '(("&" .  "&amp;")
+      ("\"" . "&quot;")
+      ("<" . "&lt;")
+      (">" . "&gt;"))))
+
+;;gets arg1,arg2 ... argn and a string
+;;replace $1 by arg1, $2 by arg2 ...
+(define (string-replace format . args)
+  (string-translate*
+    format
+    (let loop ((i 1) (args args) (result '()))
+      (if (null? args)
+        result
+        (loop 
+          (fx+ i 1) 
+          (cdr args) 
+          (cons 
+            (cons 
+              (string-append
+                "$"
+                (number->string i))
+              (car args))
+            result))))))
 
 )
