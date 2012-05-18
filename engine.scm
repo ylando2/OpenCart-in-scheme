@@ -1,4 +1,4 @@
-(module engine (encript-password make-salt h string-translate$)
+(module engine (encript-password make-salt h string-?-translate)
   (import scheme chicken data-structures)
   (use message-digest sha2 md5 irregex)
 
@@ -37,7 +37,7 @@
 
 ;;gets arg1,arg2 ... argn and a string
 ;;replace $1 by arg1, $2 by arg2 ...
-(define (string-translate$ format . args)
+(define (string-?-translate format . args)
   (string-translate*
     format
     (let loop ((i 1) (args args) (result '()))
@@ -49,7 +49,7 @@
           (cons 
             (cons 
               (string-append
-                "$"
+                "?"
                 (number->string i))
               (car args))
             result))))))

@@ -1,4 +1,4 @@
-(module common-macros (ds-set! ds-let ds-define
+(module common-macros (ds-set! ds-let ds-define let1
                        if*
                        /= div rem inc inc! dec dec!
                        vref vset! hset! href 
@@ -86,7 +86,10 @@
           `(let ((rest ,vals))
               ,(ds-let-helper vars rest body compare?))))))
 
-  
+  (define-syntax let1
+    (syntax-rules ()
+      [(_ var val body ...) (let ((var val)) body ...)]))
+
   (define-for-syntax (ds-set!-helper vars rest compare?)
      (if (null? vars) 
        `(void)
