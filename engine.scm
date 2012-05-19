@@ -22,7 +22,7 @@
   0
   16))
 
-;;Store password in hash value.
+;;Turn the password into a more secure hash value.
 (define (encript-password password salt)
   (sha2-encript (string-append salt password)))
 
