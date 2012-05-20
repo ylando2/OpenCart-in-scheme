@@ -1,12 +1,17 @@
 (module common-macros (ds-set! ds-let ds-define
                        if*
                        /= div rem inc inc! dec dec!
-                       vref vset! hset! href get*
+                       vref vset! hset! href 
                        enum-case
-                       $i
-                       dbg)
+                       $i $f
+                       when-let if-let swap! push! pop! 
+                       point define+
+                       while do-while until do-until 
+                       each up down repeat
+                       dbg
+                       get* down* add-hash-table! compile-each)
   (import scheme chicken)
-
+  
   (define-syntax ds-define-false
     (syntax-rules (o)
       ((_ ()) (void))
@@ -225,18 +230,19 @@
 
 (define-syntax hset!
   (syntax-rules ()
-    [(_ args ...) (hash-set! args ...)]))
+    [(_ args ...) (hash-table-set! args ...)]))
 
 (define-syntax href
   (syntax-rules ()
-    [(_ args ...) (hash-ref args ...)]))
+    [(_ hash key) (hash-table-ref hash key)]
+    [(_ hash key default) (hash-table-ref/default hash key default)]))
 
 (define-syntax get*
   (syntax-rules ()
-    [(_ hash key value) (if (hash-has-key? hash key) 
-                            (hash-ref hash key)
+    [(_ hash key value) (if (hash-table-exists? hash key) 
+                            (hash-table-ref hash key)
                             (let ([val value])
-                              (hash-set! hash key val)
+                              (hash-table-set! hash key val)
                               val))]))
 
 
@@ -357,6 +363,115 @@
 (define-syntax dbg
   (syntax-rules ()
     [(_ exp) (let ([val exp]) (format #t "Debug: ~a = ~a~%" 'exp val) val)]))
+
+;;A helper macro similar to -> in clojure
+;;use by ($f (fn args ...) (fn2 ... it ...) ...)
+;;it assign "it" with the result of the last expression
+(define-syntax $f
+  (ir-macro-transformer
+   (lambda (expr inject compare?)
+     (let loop ((lst (cdr expr)))
+        (if (null? (cdr lst))
+          (car lst)
+          `(let ((,(inject 'it) ,(car lst))) ,(loop (cdr lst))))))))
+
+(define-syntax when-let
+  (syntax-rules ()
+    [(_ (var cond) body ...) (let ([var cond]) (when var body ...))]))
+
+(define-syntax if-let
+  (syntax-rules ()
+    [(_ (var cond) then-body else-body) (let ([var cond]) (if cond then-body else-body))]))
+
+(define-syntax swap!
+  (syntax-rules ()
+    [(_ var1 var2) (let ([temp var1]) (set! var1 var2) (set! var2 temp))]))
+
+(define-syntax push!
+  (syntax-rules ()
+    [(_ val lst) (set! lst (cons val lst))]))
+
+(define-syntax pop!
+  (syntax-rules ()
+    [(_ lst) (let ([temp (car lst)]) (set! lst (cdr lst)) temp)]))
+
+;;Define a breaking point
+(define-syntax point 
+  (syntax-rules ()
+    [(_ name body ...) (call/cc (lambda (name) body ...))]))
+
+;;Define function that we can break out with return
+(define-syntax define+
+  (ir-macro-transformer
+   (lambda (expr inject compare?)
+     `(define ,(cadr expr) 
+        (call/cc (lambda (,(inject 'return)) ,@(cddr expr)))))))
+
+;;Loops
+(define-syntax while
+  (syntax-rules ()
+    [(_ cond body ...) (let loop () (when cond body ... (loop)))]))
+
+;;run at least once
+(define-syntax do-while
+  (syntax-rules ()
+    [(_ cond body ...) (let loop () body ... (when cond (loop)))]))
+
+(define-syntax until 
+  (syntax-rules ()
+    [(_ cond body ...) (let loop () (unless cond body ... (loop)))]))
+
+;;run at least once
+(define-syntax do-until
+  (syntax-rules ()
+    [(_ cond body ...) (let loop () body ... (unless cond (loop)))]))
+
+(define-syntax each
+  (syntax-rules ()
+    [(_ (var lst) body ...) (for-each (lambda (var) body ...) lst)]))
+
+(define-syntax up
+  (syntax-rules ()
+    [(_ (var end) body ...) (let loop ([var 0]) (when (< var end) body ... (loop (+ var 1))))]
+    [(_ (var start end) body ...) (let loop ([var start]) (when (< var end) body ... (loop (+ var 1))))]
+    [(_ (var start end by) body ...) (let loop ([var start]) (when (< var end) body ... (loop (+ var by))))]))
+
+(define-syntax down
+  (syntax-rules ()
+    [(_ (var start) body ...) (let loop ([var start]) (when (>= var 0) body ... (loop (- var 1))))]
+    [(_ (var start end) body ...) (let loop ([var start]) (when (>= var end) body ... (loop (- var 1))))]
+    [(_ (var start end by) body ...) (let loop ([var start]) (when (>= var end) body ... (loop (- var by))))]))
+
+(define-syntax down*
+  (syntax-rules ()
+    [(_ (var start) body ...) (let loop ([var (- start 1)]) (when (>= var 0) body ... (loop (- var 1))))]
+    [(_ (var start end) body ...) (let loop ([var (- start 1)]) (when (>= var end) body ... (loop (- var 1))))]
+    [(_ (var start end by) body ...) (let loop ([var (- start 1)]) (when (>= var end) body ... (loop (- var by))))]))
+
+(define-syntax repeat
+  (syntax-rules ()
+    [(_ times body ...) (let loop ([i times]) (when (> i 0) body ... (loop (- i 1))))]))
+
+(define-syntax add-hash-table!
+  (syntax-rules (=>)
+    [(_ hash key => val) (hash-table-set! hash key val)]
+    [(_ hash key => val rest ...) 
+     (begin
+       (hash-table-set! hash key val)
+       (add-hash-table! hash rest ...))]))
+
+(define-syntax compile-each
+  (ir-macro-transformer
+   (lambda (expr inject compare?)
+     (let* ((var/vals (cadr expr))
+            (var (car var/vals))
+            (vals (cadr var/vals)) 
+            (body (cddr expr))) 
+     `(begin
+        ,@(map
+           (lambda (val)
+             `(let ((,var ,val)) ,@body))
+           vals))))))
 
 
 );end of module
