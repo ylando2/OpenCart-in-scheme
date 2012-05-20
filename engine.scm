@@ -1,6 +1,6 @@
-(module engine (encript-password make-salt)
+(module engine (encript-password make-salt h)
   (import scheme chicken)
-  (use message-digest sha2 md5)
+  (use message-digest sha2 md5 irregex)
 
 (define (sha2-encript str)
   (message-digest-string (sha256-primitive) str))
@@ -25,5 +25,18 @@
 ;;Turn the password into a more secure hash value.
 (define (encript-password password salt)
   (sha2-encript (string-append salt password)))
+
+;;html-escaping
+(define (h str)
+  (irregex-replace/all 
+    '(: (or "&" "\"" "<" ">")) 
+    str 
+    (lambda (x) 
+      (let ((str2 (irregex-match-substring x 0)))
+        (cond 
+          [(string=? str2 "&") "&amp;"]
+          [(string=? str2 "\"") "&quot;"]
+          [(string=? str2 "<") "&lt;"]
+          [(string=? str2 ">") "&gt;"])))))
 
 )
